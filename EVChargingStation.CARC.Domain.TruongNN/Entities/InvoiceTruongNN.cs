@@ -16,7 +16,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Entities
         [Required]
         public DateTime PeriodEnd { get; set; }
 
-        public InvoiceStatus Status { get; set; } = InvoiceStatus.Draft;
+        public InvoiceStatus Status { get; set; } = InvoiceStatus.Outstanding;
 
         [Range(0, 1000000)]
         public decimal SubtotalAmount { get; set; } = 0;

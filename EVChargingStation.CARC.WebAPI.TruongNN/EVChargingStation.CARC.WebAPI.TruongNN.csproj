@@ -24,10 +24,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Controllers\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\EVChargingStation.CARC.Application.TruongNN\EVChargingStation.CARC.Application.TruongNN.csproj" />
     </ItemGroup>
 

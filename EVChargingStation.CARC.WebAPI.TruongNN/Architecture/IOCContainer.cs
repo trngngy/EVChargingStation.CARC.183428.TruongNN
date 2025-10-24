@@ -1,11 +1,13 @@
 ﻿using System.Text;
 using EVChargingStation.Application.Services.Commons;
+using EVChargingStation.CARC.Application.TruongNN.Interfaces;
 using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
 using EVChargingStation.CARC.Domain.TruongNN;
 using EVChargingStation.CARC.Infrastructure.TruongNN;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Interfaces;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Repositories;
+using EVChargingStationCARC.Application.TruongNN.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -64,7 +66,7 @@ public static class IocContainer
         services.AddScoped<ICurrentTime, CurrentTime>();
         services.AddScoped<IClaimsService, ClaimsService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-
+        services.AddScoped<IAuthService, AuthService>();
         services.AddHttpContextAccessor();
 
         return services;
