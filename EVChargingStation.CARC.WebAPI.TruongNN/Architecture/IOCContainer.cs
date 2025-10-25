@@ -2,6 +2,7 @@
 using EVChargingStation.Application.Services.Commons;
 using EVChargingStation.CARC.Application.TruongNN.Interfaces;
 using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
+using EVChargingStation.CARC.Application.TruongNN.Services;
 using EVChargingStation.CARC.Domain.TruongNN;
 using EVChargingStation.CARC.Infrastructure.TruongNN;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
@@ -67,6 +68,7 @@ public static class IocContainer
         services.AddScoped<IClaimsService, ClaimsService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddHttpContextAccessor();
 
         return services;

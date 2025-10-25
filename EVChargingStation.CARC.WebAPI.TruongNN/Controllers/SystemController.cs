@@ -5,7 +5,6 @@ using EVChargingStation.CARC.Domain.TruongNN.Entities;
 using EVChargingStation.CARC.Domain.TruongNN.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic;
 
 namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
 {
