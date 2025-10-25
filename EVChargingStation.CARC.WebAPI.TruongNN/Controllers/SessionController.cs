@@ -1,0 +1,74 @@
+﻿using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
+using EVChargingStation.CARC.Application.TruongNN.Utils;
+using EVChargingStation.CARC.Infrastructure.TruongNN.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
+{
+    [ApiController]
+    [Route("api/sessions")]
+    [Authorize]
+    public class SessionController : ControllerBase
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IClaimsService _claimsService;
+        private readonly ILoggerService _logger;
+
+        public SessionController(
+            IUnitOfWork unitOfWork,
+            IClaimsService claimsService,
+            ILoggerService logger)
+        {
+            _unitOfWork = unitOfWork;
+            _claimsService = claimsService;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Get all session IDs of the current authenticated user
+        /// </summary>
+        /// <remarks>
+        /// Returns list of all session IDs from the Session table for the currently logged-in user.
+        /// Uses ClaimService to get the current user ID from JWT token.
+        /// </remarks>
+        /// <returns>List of session IDs</returns>
+        [HttpGet("my-session-ids")]
+        public async Task<IActionResult> GetMySessionIds()
+        {
+            try
+            {
+                // Lấy userId từ ClaimService
+                var userId = _claimsService.GetCurrentUserId;
+
+                if (userId == Guid.Empty)
+                    throw ErrorHelper.Unauthorized("User not authenticated.");
+
+                // Lấy tất cả SessionId từ bảng Session của user hiện tại
+                var sessionIds = await _unitOfWork.Sessions
+                    .GetQueryable()
+                    .Where(s => s.UserId == userId && !s.IsDeleted)
+                    .OrderByDescending(s => s.StartTime)
+                    .Select(s => s.TruongNNID)
+                    .ToListAsync();
+
+                _logger.Success($"Retrieved {sessionIds.Count} session IDs for user {userId}");
+
+                return Ok(ApiResult<object>.Success(new
+                {
+                    UserId = userId,
+                    TotalSessions = sessionIds.Count,
+                    SessionIds = sessionIds
+                }, "200", $"Retrieved {sessionIds.Count} session IDs successfully."));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error getting session IDs: {ex.Message}");
+                var statusCode = ExceptionUtils.ExtractStatusCode(ex);
+                var errorResponse = ExceptionUtils.CreateErrorResponse<object>(ex);
+                return StatusCode(statusCode, errorResponse);
+            }
+        }
+    }
+}
