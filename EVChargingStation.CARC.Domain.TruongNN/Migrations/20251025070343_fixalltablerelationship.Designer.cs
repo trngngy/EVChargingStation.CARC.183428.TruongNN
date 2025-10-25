@@ -3,6 +3,7 @@ using System;
 using EVChargingStation.CARC.Domain.TruongNN;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 {
     [DbContext(typeof(FA25_SWD392_SE183428_G6_EvChargingStation))]
-    partial class FA25_SWD392_SE183428_G6_EvChargingStationModelSnapshot : ModelSnapshot
+    [Migration("20251025070343_fixalltablerelationship")]
+    partial class fixalltablerelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

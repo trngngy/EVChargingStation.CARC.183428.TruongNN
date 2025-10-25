@@ -9,7 +9,7 @@ public class Session : BaseEntity
 
     [Required] public Guid UserId { get; set; }
 
-    public Guid? ReservationId { get; set; }
+    public Guid? ReservationLongLQId { get; set; }
 
     [Required] public DateTime StartTime { get; set; }
 
@@ -26,12 +26,12 @@ public class Session : BaseEntity
 
     public decimal? Cost { get; set; }
 
-    public Guid? InvoiceId { get; set; }
+    public Guid? InvoiceTruongNNId { get; set; }
 
     // Navigation properties
     public Connector Connector { get; set; } = null!;
     public User User { get; set; } = null!;
     public ReservationLongLQ? ReservationLongLQ { get; set; }
-    public InvoiceTruongNN? Invoice { get; set; }
+    public InvoiceTruongNN? InvoiceTruongNN { get; set; }
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

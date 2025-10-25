@@ -3,6 +3,7 @@ using System;
 using EVChargingStation.CARC.Domain.TruongNN;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 {
     [DbContext(typeof(FA25_SWD392_SE183428_G6_EvChargingStation))]
-    partial class FA25_SWD392_SE183428_G6_EvChargingStationModelSnapshot : ModelSnapshot
+    [Migration("20251025065602_fixtableSession")]
+    partial class fixtableSession
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,7 +55,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
                     b.Property<decimal>("PricePerKwh")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid>("StationAnhDHVId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Status")
@@ -66,7 +69,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 
                     b.HasKey("TruongNNID");
 
-                    b.HasIndex("StationAnhDHVId");
+                    b.HasIndex("StationId");
 
                     b.ToTable("Connectors");
                 });
@@ -221,7 +224,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("InvoiceTruongNNId")
+                    b.Property<Guid?>("InvoiceId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -247,7 +250,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 
                     b.HasKey("TruongNNID");
 
-                    b.HasIndex("InvoiceTruongNNId");
+                    b.HasIndex("InvoiceId");
 
                     b.HasIndex("SessionId");
 
@@ -332,7 +335,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("StationAnhDHVId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("SuggestedAt")
@@ -351,7 +354,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 
                     b.HasIndex("ConnectorId");
 
-                    b.HasIndex("StationAnhDHVId");
+                    b.HasIndex("StationId");
 
                     b.HasIndex("UserId");
 
@@ -574,7 +577,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
                     b.Property<Guid>("StaffUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("StationAnhDHVId")
+                    b.Property<Guid>("StationId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -587,7 +590,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 
                     b.HasIndex("StaffUserId");
 
-                    b.HasIndex("StationAnhDHVId");
+                    b.HasIndex("StationId");
 
                     b.ToTable("StaffStations");
                 });
@@ -824,7 +827,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
                 {
                     b.HasOne("EVChargingStation.CARC.Domain.TruongNN.Entities.StationAnhDHV", "StationAnhDHV")
                         .WithMany("Connectors")
-                        .HasForeignKey("StationAnhDHVId")
+                        .HasForeignKey("StationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -844,9 +847,9 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 
             modelBuilder.Entity("EVChargingStation.CARC.Domain.TruongNN.Entities.Payment", b =>
                 {
-                    b.HasOne("EVChargingStation.CARC.Domain.TruongNN.Entities.InvoiceTruongNN", "InvoiceTruongNN")
+                    b.HasOne("EVChargingStation.CARC.Domain.TruongNN.Entities.InvoiceTruongNN", "Invoice")
                         .WithMany("Payments")
-                        .HasForeignKey("InvoiceTruongNNId")
+                        .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("EVChargingStation.CARC.Domain.TruongNN.Entities.Session", "Session")
@@ -860,7 +863,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("InvoiceTruongNN");
+                    b.Navigation("Invoice");
 
                     b.Navigation("Session");
 
@@ -876,7 +879,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 
                     b.HasOne("EVChargingStation.CARC.Domain.TruongNN.Entities.StationAnhDHV", "StationAnhDHV")
                         .WithMany("Recommendations")
-                        .HasForeignKey("StationAnhDHVId")
+                        .HasForeignKey("StationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -970,7 +973,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Migrations
 
                     b.HasOne("EVChargingStation.CARC.Domain.TruongNN.Entities.StationAnhDHV", "StationAnhDHV")
                         .WithMany("StaffStations")
-                        .HasForeignKey("StationAnhDHVId")
+                        .HasForeignKey("StationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

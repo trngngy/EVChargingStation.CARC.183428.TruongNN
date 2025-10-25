@@ -6,7 +6,7 @@ public class Recommendation : BaseEntity
 {
     [Required] public Guid UserId { get; set; }
 
-    [Required] public Guid StationId { get; set; }
+    [Required] public Guid StationAnhDHVId { get; set; }
 
     public Guid? ConnectorId { get; set; }
 

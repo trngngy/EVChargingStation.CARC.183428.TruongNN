@@ -11,7 +11,7 @@ public class Payment : BaseEntity
 
     public string? Note { get; set; }
 
-    public Guid? InvoiceId { get; set; }
+    public Guid? InvoiceTruongNNId { get; set; }
 
     public Guid? SessionId { get; set; }
 
@@ -19,6 +19,6 @@ public class Payment : BaseEntity
 
     // Navigation properties
     public User User { get; set; } = null!;
-    public InvoiceTruongNN? Invoice { get; set; }
+    public InvoiceTruongNN? InvoiceTruongNN { get; set; }
     public Session? Session { get; set; }
 }

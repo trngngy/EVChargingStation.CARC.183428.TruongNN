@@ -6,7 +6,7 @@ public class StaffStation : BaseEntity
 {
     [Required] public Guid StaffUserId { get; set; }
 
-    [Required] public Guid StationId { get; set; }
+    [Required] public Guid StationAnhDHVId { get; set; }
 
     // Navigation properties
     public User StaffUser { get; set; } = null!;

@@ -50,7 +50,7 @@ public class FA25_SWD392_SE183428_G6_EvChargingStation : DbContext
         modelBuilder.Entity<Connector>()
             .HasOne(c => c.StationAnhDHV)
             .WithMany(s => s.Connectors)
-            .HasForeignKey(c => c.StationId);
+            .HasForeignKey(c => c.StationAnhDHVId);
 
         // Reservation ↔ User (many-to-one)
         modelBuilder.Entity<ReservationLongLQ>()
@@ -75,7 +75,7 @@ public class FA25_SWD392_SE183428_G6_EvChargingStation : DbContext
         modelBuilder.Entity<Session>()
             .HasOne(s => s.ReservationLongLQ)
             .WithOne(r => r.Session)
-            .HasForeignKey<Session>(s => s.ReservationId)
+            .HasForeignKey<Session>(s => s.ReservationLongLQId)
             .IsRequired(false);
 
         // Session ↔ Connector (many-to-one)
@@ -92,9 +92,9 @@ public class FA25_SWD392_SE183428_G6_EvChargingStation : DbContext
 
         // Session ↔ Invoice (many-to-one, optional)
         modelBuilder.Entity<Session>()
-            .HasOne(s => s.Invoice)
+            .HasOne(s => s.InvoiceTruongNN)
             .WithMany(i => i.Sessions)
-            .HasForeignKey(s => s.InvoiceId)
+            .HasForeignKey(s => s.InvoiceTruongNNId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
@@ -106,9 +106,9 @@ public class FA25_SWD392_SE183428_G6_EvChargingStation : DbContext
 
         // Payment ↔ Invoice (many-to-one, optional)
         modelBuilder.Entity<Payment>()
-            .HasOne(p => p.Invoice)
+            .HasOne(p => p.InvoiceTruongNN)
             .WithMany(i => i.Payments)
-            .HasForeignKey(p => p.InvoiceId)
+            .HasForeignKey(p => p.InvoiceTruongNNId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
@@ -148,7 +148,7 @@ public class FA25_SWD392_SE183428_G6_EvChargingStation : DbContext
         modelBuilder.Entity<StaffStation>()
             .HasOne(ss => ss.StationAnhDHV)
             .WithMany(s => s.StaffStations)
-            .HasForeignKey(ss => ss.StationId);
+            .HasForeignKey(ss => ss.StationAnhDHVId);
 
         // Report ↔ Staff (User) (many-to-one, optional)
         modelBuilder.Entity<Report>()
@@ -168,7 +168,7 @@ public class FA25_SWD392_SE183428_G6_EvChargingStation : DbContext
         modelBuilder.Entity<Recommendation>()
             .HasOne(r => r.StationAnhDHV)
             .WithMany(s => s.Recommendations)
-            .HasForeignKey(r => r.StationId);
+            .HasForeignKey(r => r.StationAnhDHVId);
 
         // Recommendation ↔ Connector (optional, many-to-one)
         modelBuilder.Entity<Recommendation>()

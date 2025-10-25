@@ -5,7 +5,7 @@ namespace EVChargingStation.CARC.Domain.TruongNN.Entities;
 
 public class Connector : BaseEntity
 {
-    [Required] public Guid StationId { get; set; }
+    [Required] public Guid StationAnhDHVId { get; set; }
 
     [Required] public ConnectorType ConnectorType { get; set; }
 
