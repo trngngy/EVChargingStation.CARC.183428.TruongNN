@@ -2,6 +2,7 @@
 using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
 using EVChargingStation.CARC.Application.TruongNN.Utils;
 using EVChargingStation.CARC.Domain.TruongNN.DTOs.InvoiceDTOs;
+using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -91,22 +92,36 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
         /// </remarks>
         [HttpGet]
         [Authorize(Policy = "AdminPolicy")]
-        public async Task<IActionResult> GetAllInvoices([FromQuery] GetInvoicesQueryDto query)
+        public async Task<IActionResult> GetAllInvoices(
+            [FromQuery] string? search,
+            [FromQuery] string? sortBy,
+            [FromQuery] bool isDescending = false,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                var result = await _invoiceService.GetAllInvoicesAsync(query);
-                return Ok(ApiResult<PaginatedList<InvoiceResponseDto>>.Success(
+                var result = await _invoiceService.GetAllInvoicesAsync(
+                    search: search,
+                    sortBy: sortBy,
+                    isDescending: isDescending,
+                    page: page,
+                    pageSize: pageSize
+                );
+
+                return Ok(ApiResult<Pagination<InvoiceResponseDto>>.Success(
                     result,
                     "200",
-                    $"Retrieved {result.Items.Count} of {result.TotalCount} invoices (Page {result.PageNumber}/{result.TotalPages})."));
+                    $"Retrieved {result.Items.Count} of {result.TotalCount} invoices (Page {result.PageSize}/{result.TotalPages})."));
             }
             catch (Exception ex)
             {
                 _logger.Error($"Error getting invoices: {ex.Message}");
+
                 var statusCode = ex.Data["StatusCode"] as int? ?? 500;
+
                 return StatusCode(statusCode,
-                    ApiResult<PaginatedList<InvoiceResponseDto>>.Failure(statusCode.ToString(), ex.Message));
+                    ApiResult<Pagination<InvoiceResponseDto>>.Failure(statusCode.ToString(), ex.Message));
             }
         }
 

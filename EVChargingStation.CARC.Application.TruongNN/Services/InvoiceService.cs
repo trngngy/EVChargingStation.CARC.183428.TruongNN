@@ -4,6 +4,7 @@ using EVChargingStation.CARC.Application.TruongNN.Utils;
 using EVChargingStation.CARC.Domain.TruongNN.DTOs.InvoiceDTOs;
 using EVChargingStation.CARC.Domain.TruongNN.Entities;
 using EVChargingStation.CARC.Domain.TruongNN.Enums;
+using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -116,7 +117,13 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
             }
         }
 
-        public async Task<PaginatedList<InvoiceResponseDto>> GetAllInvoicesAsync(GetInvoicesQueryDto query)
+        // Sửa hàm ban đầu, giữ nguyên chữ ký và logic lọc/sắp xếp
+        public async Task<Pagination<InvoiceResponseDto>> GetAllInvoicesAsync(
+            string? search,
+            string? sortBy,
+            bool isDescending,
+            int page,
+            int pageSize)
         {
             try
             {
@@ -125,80 +132,59 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                     .Include(i => i.User)
                     .Where(i => !i.IsDeleted);
 
-                // Filter by user ID
-                if (query.UserId.HasValue)
+                if (!string.IsNullOrWhiteSpace(search))
                 {
-                    invoicesQuery = invoicesQuery.Where(i => i.UserId == query.UserId.Value);
-                }
-
-                // Filter by status
-                if (query.Status.HasValue)
-                {
-                    var status = (InvoiceStatus)query.Status.Value;
-                    invoicesQuery = invoicesQuery.Where(i => i.Status == status);
-                }
-
-                // Filter overdue
-                if (query.IsOverdue.HasValue && query.IsOverdue.Value)
-                {
-                    var now = DateTime.UtcNow;
-                    invoicesQuery = invoicesQuery.Where(i =>
-                        i.Status == InvoiceStatus.Outstanding &&
-                        i.DueDate.HasValue &&
-                        i.DueDate.Value < now);
-                }
-
-                // Search by user email or name
-                if (!string.IsNullOrWhiteSpace(query.SearchTerm))
-                {
-                    var searchLower = query.SearchTerm.ToLower();
+                    var searchLower = search.ToLower();
                     invoicesQuery = invoicesQuery.Where(i =>
                         i.User.Email.ToLower().Contains(searchLower) ||
                         (i.User.FirstName + " " + i.User.LastName).ToLower().Contains(searchLower));
                 }
 
-                // Sorting
-                invoicesQuery = query.SortBy.ToLower() switch
+                // 3. Sắp xếp (Ánh xạ isDescending)
+                var sortOrder = isDescending ? "desc" : "asc";
+                var sortKey = (sortBy ?? string.Empty).ToLower();
+
+                invoicesQuery = sortKey switch
                 {
-                    "periodstart" => query.SortOrder.ToLower() == "asc"
-                        ? invoicesQuery.OrderBy(i => i.PeriodStart)
-                        : invoicesQuery.OrderByDescending(i => i.PeriodStart),
-                    "periodend" => query.SortOrder.ToLower() == "asc"
-                        ? invoicesQuery.OrderBy(i => i.PeriodEnd)
-                        : invoicesQuery.OrderByDescending(i => i.PeriodEnd),
-                    "totalamount" => query.SortOrder.ToLower() == "asc"
-                        ? invoicesQuery.OrderBy(i => i.TotalAmount)
-                        : invoicesQuery.OrderByDescending(i => i.TotalAmount),
-                    "status" => query.SortOrder.ToLower() == "asc"
-                        ? invoicesQuery.OrderBy(i => i.Status)
-                        : invoicesQuery.OrderByDescending(i => i.Status),
-                    "duedate" => query.SortOrder.ToLower() == "asc"
-                        ? invoicesQuery.OrderBy(i => i.DueDate)
-                        : invoicesQuery.OrderByDescending(i => i.DueDate),
-                    _ => query.SortOrder.ToLower() == "asc"
-                        ? invoicesQuery.OrderBy(i => i.CreatedAt)
-                        : invoicesQuery.OrderByDescending(i => i.CreatedAt)
+                    "periodstart" => isDescending
+                        ? invoicesQuery.OrderByDescending(i => i.PeriodStart)
+                        : invoicesQuery.OrderBy(i => i.PeriodStart),
+                    "periodend" => isDescending
+                        ? invoicesQuery.OrderByDescending(i => i.PeriodEnd)
+                        : invoicesQuery.OrderBy(i => i.PeriodEnd),
+                    "totalamount" => isDescending
+                        ? invoicesQuery.OrderByDescending(i => i.TotalAmount)
+                        : invoicesQuery.OrderBy(i => i.TotalAmount),
+                    "status" => isDescending
+                        ? invoicesQuery.OrderByDescending(i => i.Status)
+                        : invoicesQuery.OrderBy(i => i.Status),
+                    "duedate" => isDescending
+                        ? invoicesQuery.OrderByDescending(i => i.DueDate)
+                        : invoicesQuery.OrderBy(i => i.DueDate),
+                    _ => isDescending
+                        ? invoicesQuery.OrderByDescending(i => i.CreatedAt)
+                        : invoicesQuery.OrderBy(i => i.CreatedAt)
                 };
 
-                // Get paginated results
-                var paginatedInvoices = await PaginatedList<InvoiceTruongNN>.CreateAsync(
-                    invoicesQuery,
-                    query.PageNumber,
-                    query.PageSize);
+                var totalInvoices = await invoicesQuery.CountAsync();
 
-                // Map to DTOs
-                var invoiceDtos = paginatedInvoices.Items.Select(MapToResponseDto).ToList();
+                var pagedInvoices = await invoicesQuery
+                            .Skip((page - 1) * pageSize)
+                            .Take(pageSize)
+                            .ToListAsync();
 
-                return new PaginatedList<InvoiceResponseDto>(
+                var invoiceDtos = pagedInvoices.Select(MapToResponseDto).ToList();
+
+                return new Pagination<InvoiceResponseDto>(
                     invoiceDtos,
-                    paginatedInvoices.TotalCount,
-                    paginatedInvoices.PageNumber,
-                    paginatedInvoices.PageSize);
+                    totalInvoices,
+                    page,
+                    pageSize);
             }
             catch (Exception ex)
             {
                 _logger.Error($"Error getting all invoices: {ex.Message}");
-                throw;
+                throw new Exception("An unexpected error occurred while fetching invoices.");
             }
         }
 
