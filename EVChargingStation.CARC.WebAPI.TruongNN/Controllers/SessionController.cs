@@ -1,6 +1,9 @@
-﻿using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
+﻿using EVChargingStation.CARC.Application.TruongNN.Interfaces;
+using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
 using EVChargingStation.CARC.Application.TruongNN.Utils;
+using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Interfaces;
+using EVChargingStation.CARC.Domain.TruongNN.DTOs.SessionDTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,15 +18,18 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsService _claimsService;
         private readonly ILoggerService _logger;
+        private readonly ISessionService _sessionService;
 
         public SessionController(
             IUnitOfWork unitOfWork,
             IClaimsService claimsService,
-            ILoggerService logger)
+            ILoggerService logger,
+            ISessionService sessionService)
         {
             _unitOfWork = unitOfWork;
             _claimsService = claimsService;
             _logger = logger;
+            _sessionService = sessionService;
         }
 
         /// <summary>
@@ -65,9 +71,31 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
             catch (Exception ex)
             {
                 _logger.Error($"Error getting session IDs: {ex.Message}");
-                var statusCode = ExceptionUtils.ExtractStatusCode(ex);
-                var errorResponse = ExceptionUtils.CreateErrorResponse<object>(ex);
-                return StatusCode(statusCode, errorResponse);
+                var statusCode = ex.Data["StatusCode"] as int? ??500;
+                return StatusCode(statusCode,
+                    ApiResult<object>.Failure(statusCode.ToString(), ex.Message));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllSessions(
+            string? search,
+            string? sortBy,
+            bool isDescending = false,
+            int page =1,
+            int pageSize =10)
+        {
+            try
+            {
+                var result = await _sessionService.GetAllSessionsAsync(search, sortBy, isDescending, page, pageSize);
+                return Ok(ApiResult<Pagination<SessionResponseDto>>.Success(result, "200", "Retrieved sessions successfully."));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error getting all sessions: {ex.Message}");
+                var statusCode = ex.Data["StatusCode"] as int? ??500;
+                return StatusCode(statusCode,
+                    ApiResult<Pagination<SessionResponseDto>>.Failure(statusCode.ToString(), ex.Message));
             }
         }
     }

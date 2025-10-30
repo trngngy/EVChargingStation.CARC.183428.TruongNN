@@ -10,16 +10,16 @@ services:
       evchargingstation.database:
         condition: service_healthy
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=evchargingstation.database;Port=5432;Database=FA25_SWD392_SE183428_G6_EvChargingStation;Username=postgres;Password=postgres;TimeZone=Asia/Ho_Chi_Minh
-      - JWT__SecretKey=EVChargingStation_SECRETKEY_SIEUCAPBAOMAT_VAYMACHUADU16KYTU
-      - JWT__Issuer=EVChargingStation_Issuer
-      - JWT__Audience=EVChargingStation_Audience
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=evchargingstation.database;Port=5432;Database=FA25_SWD392_SE183428_G6_EvChargingStation;Username=postgres;Password=postgres;TimeZone=Asia/Ho_Chi_Minh
+      JWT__SecretKey: EVChargingStation_SECRETKEY_SIEUCAPBAOMAT_VAYMACHUADU16KYTU
+      JWT__Issuer: EVChargingStation_Issuer
+      JWT__Audience: EVChargingStation_Audience
     ports:
       - "5001:5000"
 
   evchargingstation.database:
-    image: postgres:latest
+    image: postgres:16
     restart: always
     environment:
       POSTGRES_USER: postgres
