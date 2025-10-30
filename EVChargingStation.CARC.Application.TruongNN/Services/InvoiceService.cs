@@ -39,13 +39,9 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                 if (!session.Cost.HasValue)
                     throw ErrorHelper.BadRequest("Session cost is not calculated yet.");
 
-                // Check if invoice already exists for this session
-                var existingInvoice = await _unitOfWork.Invoices
-                    .GetQueryable()
-                    .AnyAsync(i => i.SessionId == dto.SessionId && !i.IsDeleted);
-
-                if (existingInvoice)
-                    throw ErrorHelper.Conflict("Already have that invoice.");
+                // Kiểm tra xem session đã được gán vào invoice chưa
+                if (session.InvoiceTruongNNId.HasValue)
+                    throw ErrorHelper.Conflict("This session has already been invoiced.");
 
                 // Calculate amounts
                 var subtotal = session.Cost.Value;
@@ -69,6 +65,11 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                 };
 
                 await _unitOfWork.Invoices.AddAsync(invoice);
+                await _unitOfWork.SaveChangesAsync();
+
+                // Cập nhật InvoiceTruongNNId cho session
+                session.InvoiceTruongNNId = invoice.TruongNNID;
+                await _unitOfWork.Sessions.Update(session);
                 await _unitOfWork.SaveChangesAsync();
 
                 _logger.Success($"Invoice created from session {dto.SessionId}");

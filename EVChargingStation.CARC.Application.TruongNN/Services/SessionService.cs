@@ -24,7 +24,8 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
             string? sortBy,
             bool isDescending,
             int page,
-            int pageSize)
+            int pageSize,
+            bool? uninvoicedOnly = null)
         {
             try
             {
@@ -32,6 +33,15 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                     .GetQueryable()
                     .Include(s => s.User)
                     .Where(s => !s.IsDeleted);
+
+                // Filter uninvoiced sessions if requested
+                if (uninvoicedOnly == true)
+                {
+                    sessionsQuery = sessionsQuery.Where(s =>
+                        s.Status == SessionStatus.Stopped
+                        && s.Cost.HasValue
+                        && !s.InvoiceTruongNNId.HasValue);
+                }
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {

@@ -10,6 +10,7 @@ namespace EVChargingStation.CARC.Application.TruongNN.Interfaces
             string? sortBy,
             bool isDescending,
             int page,
-            int pageSize);
+            int pageSize,
+            bool? uninvoicedOnly = null);
     }
 }

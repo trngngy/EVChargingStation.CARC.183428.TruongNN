@@ -5,6 +5,7 @@ using EVChargingStation.CARC.Domain.TruongNN.Entities;
 using EVChargingStation.CARC.Domain.TruongNN.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
 {
@@ -36,6 +37,7 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
                 await SeedStationAsync();
                 await SeedConnectorAsync();
                 await SeedSessionAsync();
+                await SeedInvoiceAsync();
 
                 return Ok(ApiResult<object>.Success(new
                 {
@@ -396,51 +398,103 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
                 return;
             }
 
-            var sessions = new List<Session>
+            var sessions = new List<Session>();
+            var random = new Random();
+
+            // Tạo 15 sessions với thời gian khác nhau trong 30 ngày qua
+            for (int i = 0; i < 15; i++)
             {
-                new()
+                var daysAgo = random.Next(0, 30);
+                var startHour = random.Next(1, 5);
+                var connector = connectors[random.Next(connectors.Count)];
+                var energyKwh = random.Next(20, 80);
+                var cost = energyKwh * connector.PricePerKwh;
+
+                sessions.Add(new Session
                 {
-                    ConnectorId = connectors[0].TruongNNID,
+                    ConnectorId = connector.TruongNNID,
                     UserId = adminUser.TruongNNID,
-                    StartTime = DateTime.UtcNow.AddDays(-2),
-                    EndTime = DateTime.UtcNow.AddDays(-2).AddHours(2),
+                    StartTime = DateTime.UtcNow.AddDays(-daysAgo).AddHours(-startHour),
+                    EndTime = DateTime.UtcNow.AddDays(-daysAgo).AddHours(-startHour + random.Next(1, 4)),
                     Status = SessionStatus.Stopped,
-                    SocStart = 20m,
-                    SocEnd = 80m,
-                    EnergyKwh = 45m,
-                    Cost = 202500m
-                },
-                new()
-                {
-                    ConnectorId = connectors[1].TruongNNID,
-                    UserId = adminUser.TruongNNID,
-                    StartTime = DateTime.UtcNow.AddDays(-1),
-                    EndTime = DateTime.UtcNow.AddDays(-1).AddHours(1.5),
-                    Status = SessionStatus.Stopped,
-                    SocStart = 30m,
-                    SocEnd = 85m,
-                    EnergyKwh = 35m,
-                    Cost = 140000m
-                },
-                new()
-                {
-                    ConnectorId = connectors[2].TruongNNID,
-                    UserId = adminUser.TruongNNID,
-                    StartTime = DateTime.UtcNow.AddHours(-4),
-                    EndTime = DateTime.UtcNow.AddHours(-1),
-                    Status = SessionStatus.Stopped,
-                    SocStart = 15m,
-                    SocEnd = 90m,
-                    EnergyKwh = 50m,
-                    Cost = 150000m // 50 kWh * 3,000 VND
-                }
-            };
+                    SocStart = random.Next(10, 40),
+                    SocEnd = random.Next(70, 100),
+                    EnergyKwh = energyKwh,
+                    Cost = cost
+                });
+            }
 
             await _context.Sessions.AddRangeAsync(sessions);
             await _context.SaveChangesAsync();
             _logger.Success($"Seeded {sessions.Count} sessions successfully.");
         }
 
+        private async Task SeedInvoiceAsync()
+        {
+            _logger.Info("Seeding invoices...");
 
+            var adminUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == "Admin@gmail.com");
+            var sessions = await _context.Sessions
+                .Where(s => !s.InvoiceTruongNNId.HasValue) // Chỉ lấy sessions chưa có invoice
+                .OrderBy(s => s.StartTime)
+                .ToListAsync();
+
+            if (adminUser == null || !sessions.Any())
+            {
+                _logger.Error("Admin user or uninvoiced sessions not found for invoice seeding.");
+                return;
+            }
+
+            var invoices = new List<InvoiceTruongNN>();
+            var random = new Random();
+
+            // Tạo 10 invoices, mỗi invoice liên kết với 1 session duy nhất
+            var invoiceCount = Math.Min(10, sessions.Count);
+
+            for (int i = 0; i < invoiceCount; i++)
+            {
+                var session = sessions[i];
+
+                if (!session.Cost.HasValue || !session.EndTime.HasValue)
+                {
+                    _logger.Warn($"Session {session.TruongNNID} skipped - missing cost or end time.");
+                    continue;
+                }
+
+                var subtotalAmount = session.Cost.Value;
+                var taxAmount = subtotalAmount * 0.1m; // VAT 10%
+                var totalAmount = subtotalAmount + taxAmount;
+                var isPaid = i < 7; // 7 invoices đầu đã thanh toán
+
+                var invoice = new InvoiceTruongNN
+                {
+                    UserId = adminUser.TruongNNID,
+                    SessionId = session.TruongNNID,
+                    PeriodStart = session.StartTime,
+                    PeriodEnd = session.EndTime.Value,
+                    SubtotalAmount = subtotalAmount,
+                    TaxAmount = taxAmount,
+                    TotalAmount = totalAmount,
+                    AmountPaid = isPaid ? totalAmount : 0,
+                    Status = isPaid ? InvoiceStatus.Paid : InvoiceStatus.Outstanding,
+                    DueDate = session.EndTime.Value.AddDays(7),
+                    IssuedAt = session.EndTime.Value
+                };
+
+                invoices.Add(invoice);
+                await _context.InvoiceTruongNN.AddAsync(invoice);
+                await _context.SaveChangesAsync();
+
+                // Cập nhật InvoiceId cho session
+                session.InvoiceTruongNNId = invoice.TruongNNID;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.Success($"Seeded {invoices.Count} invoices successfully. " +
+                           $"Each invoice is linked to 1 session. " +
+                           $"{sessions.Count - invoices.Count} sessions remain uninvoiced.");
+        }
     }
 }

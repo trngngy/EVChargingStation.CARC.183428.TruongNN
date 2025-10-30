@@ -1,9 +1,10 @@
 ﻿using EVChargingStation.CARC.Application.TruongNN.Interfaces;
 using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
 using EVChargingStation.CARC.Application.TruongNN.Utils;
+using EVChargingStation.CARC.Domain.TruongNN.DTOs.SessionDTOs;
+using EVChargingStation.CARC.Domain.TruongNN.Enums;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Interfaces;
-using EVChargingStation.CARC.Domain.TruongNN.DTOs.SessionDTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -53,11 +54,15 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
 
                 // Lấy tất cả SessionId từ bảng Session của user hiện tại
                 var sessionIds = await _unitOfWork.Sessions
-                    .GetQueryable()
-                    .Where(s => s.UserId == userId && !s.IsDeleted)
-                    .OrderByDescending(s => s.StartTime)
-                    .Select(s => s.TruongNNID)
-                    .ToListAsync();
+            .GetQueryable()
+            .Where(s => s.UserId == userId
+                && !s.IsDeleted
+                && !s.InvoiceTruongNNId.HasValue
+                && s.Status == SessionStatus.Stopped
+                && s.Cost.HasValue)
+            .OrderByDescending(s => s.StartTime)
+            .Select(s => s.TruongNNID)
+            .ToListAsync();
 
                 _logger.Success($"Retrieved {sessionIds.Count} session IDs for user {userId}");
 
@@ -79,23 +84,36 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetAllSessions(
-            string? search,
-            string? sortBy,
-            bool isDescending = false,
-            int page =1,
-            int pageSize =10)
+    [FromQuery] string? search,
+    [FromQuery] string? sortBy,
+    [FromQuery] bool isDescending = false,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10,
+    [FromQuery] bool? uninvoicedOnly = null)
         {
             try
             {
-                var result = await _sessionService.GetAllSessionsAsync(search, sortBy, isDescending, page, pageSize);
-                return Ok(ApiResult<Pagination<SessionResponseDto>>.Success(result, "200", "Retrieved sessions successfully."));
+                var result = await _sessionService.GetAllSessionsAsync(
+                    search,
+                    sortBy,
+                    isDescending,
+                    page,
+                    pageSize,
+                    uninvoicedOnly);
+
+                return Ok(ApiResult<Pagination<SessionResponseDto>>.Success(
+                    result,
+                    "200",
+                    $"Retrieved {result.Items.Count} sessions."));
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error getting all sessions: {ex.Message}");
-                var statusCode = ex.Data["StatusCode"] as int? ??500;
+                _logger.Error($"Error getting sessions: {ex.Message}");
+                var statusCode = ex.Data["StatusCode"] as int? ?? 500;
                 return StatusCode(statusCode,
-                    ApiResult<Pagination<SessionResponseDto>>.Failure(statusCode.ToString(), ex.Message));
+                    ApiResult<Pagination<SessionResponseDto>>.Failure(
+                        statusCode.ToString(),
+                        ex.Message));
             }
         }
     }
