@@ -133,6 +133,7 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                     .Include(i => i.User)
                     .Where(i => !i.IsDeleted);
 
+
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     var searchLower = search.ToLower();
@@ -341,6 +342,19 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                     throw ErrorHelper.BadRequest("Invoice has be canceled");
 
                 invoice.Status = InvoiceStatus.Canceled;
+
+                if (invoice.SessionId.HasValue)
+                {
+                    var session = await _unitOfWork.Sessions.FirstOrDefaultAsync(
+                        s => s.TruongNNID == invoice.SessionId.Value
+                    );
+
+                    if (session != null)
+                    {
+                        session.InvoiceTruongNNId = null;
+                        await _unitOfWork.Sessions.Update(session);
+                    }
+                }
 
                 await _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
