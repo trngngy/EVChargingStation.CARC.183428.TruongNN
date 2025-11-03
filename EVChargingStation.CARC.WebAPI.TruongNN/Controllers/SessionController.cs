@@ -115,7 +115,7 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("uninvoice")]
         public async Task<IActionResult> GetUnivoicedSessionsAsync(
           [FromQuery] string? search,
           [FromQuery] string? sortBy,
