@@ -84,12 +84,11 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetAllSessions(
-    [FromQuery] string? search,
-    [FromQuery] string? sortBy,
-    [FromQuery] bool isDescending = false,
-    [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 10,
-    [FromQuery] bool? uninvoicedOnly = null)
+            [FromQuery] string? search,
+            [FromQuery] string? sortBy,
+            [FromQuery] bool isDescending = false,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
@@ -98,8 +97,40 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
                     sortBy,
                     isDescending,
                     page,
-                    pageSize,
-                    uninvoicedOnly);
+                    pageSize);
+
+                return Ok(ApiResult<Pagination<SessionResponseDto>>.Success(
+                    result,
+                    "200",
+                    $"Retrieved {result.Items.Count} sessions."));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error getting sessions: {ex.Message}");
+                var statusCode = ex.Data["StatusCode"] as int? ?? 500;
+                return StatusCode(statusCode,
+                    ApiResult<Pagination<SessionResponseDto>>.Failure(
+                        statusCode.ToString(),
+                        ex.Message));
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUnivoicedSessionsAsync(
+          [FromQuery] string? search,
+          [FromQuery] string? sortBy,
+          [FromQuery] bool isDescending = false,
+          [FromQuery] int page = 1,
+          [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var result = await _sessionService.GetUninvoicedSessionsAsync(
+                    search,
+                    sortBy,
+                    isDescending,
+                    page,
+                    pageSize);
 
                 return Ok(ApiResult<Pagination<SessionResponseDto>>.Success(
                     result,

@@ -10,7 +10,13 @@ namespace EVChargingStation.CARC.Application.TruongNN.Interfaces
             string? sortBy,
             bool isDescending,
             int page,
-            int pageSize,
-            bool? uninvoicedOnly = null);
+            int pageSize);
+
+        Task<Pagination<SessionResponseDto>> GetUninvoicedSessionsAsync(
+            string? search,
+            string? sortBy,
+            bool isDescending,
+            int page,
+            int pageSize);
     }
 }

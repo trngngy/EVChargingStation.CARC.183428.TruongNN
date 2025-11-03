@@ -1,5 +1,6 @@
-﻿using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
-using EVChargingStation.CARC.Domain.TruongNN.DTOs.InvoiceDTOs;
+﻿using EVChargingStation.CARC.Domain.TruongNN.DTOs.InvoiceDTOs;
+using EVChargingStation.CARC.Domain.TruongNN.Enums;
+using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
 
 namespace EVChargingStation.CARC.Application.TruongNN.Interfaces
 {
@@ -7,7 +8,7 @@ namespace EVChargingStation.CARC.Application.TruongNN.Interfaces
     {
         Task<InvoiceResponseDto> CreateInvoiceFromSessionAsync(CreateInvoiceFromSessionDto dto);
         Task<InvoiceDetailResponseDto> GetInvoiceByIdAsync(Guid id);
-        Task<Pagination<InvoiceResponseDto>> GetAllInvoicesAsync(string? search, string? sortBy, bool isDescending, int page, int pageSize);
+        Task<Pagination<InvoiceResponseDto>> GetAllInvoicesAsync(string? search, string? sortBy, bool isDescending, int page, int pageSize, InvoiceStatus? status = null);
         Task<InvoiceResponseDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto dto);
         Task<bool> DeleteInvoiceAsync(Guid id);
         Task<InvoiceResponseDto> PayInvoiceAsync(Guid id, decimal amountPaid);

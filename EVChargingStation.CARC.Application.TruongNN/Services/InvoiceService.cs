@@ -124,7 +124,8 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
             string? sortBy,
             bool isDescending,
             int page,
-            int pageSize)
+            int pageSize,
+            InvoiceStatus? status = null)
         {
             try
             {
@@ -133,6 +134,10 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                     .Include(i => i.User)
                     .Where(i => !i.IsDeleted);
 
+                if (status.HasValue)
+                {
+                    invoicesQuery = invoicesQuery.Where(i => i.Status == status.Value);
+                }
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {

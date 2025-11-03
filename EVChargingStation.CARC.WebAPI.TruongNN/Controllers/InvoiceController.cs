@@ -2,6 +2,7 @@
 using EVChargingStation.CARC.Application.TruongNN.Interfaces.Commons;
 using EVChargingStation.CARC.Application.TruongNN.Utils;
 using EVChargingStation.CARC.Domain.TruongNN.DTOs.InvoiceDTOs;
+using EVChargingStation.CARC.Domain.TruongNN.Enums;
 using EVChargingStation.CARC.Infrastructure.TruongNN.Commons;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -97,7 +98,8 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
             [FromQuery] string? sortBy,
             [FromQuery] bool isDescending = false,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            [FromQuery] InvoiceStatus? status = null)
         {
             try
             {
@@ -106,7 +108,8 @@ namespace EVChargingStation.CARC.WebAPI.TruongNN.Controllers
                     sortBy: sortBy,
                     isDescending: isDescending,
                     page: page,
-                    pageSize: pageSize
+                    pageSize: pageSize,
+                    status : status
                 );
 
                 return Ok(ApiResult<Pagination<InvoiceResponseDto>>.Success(
