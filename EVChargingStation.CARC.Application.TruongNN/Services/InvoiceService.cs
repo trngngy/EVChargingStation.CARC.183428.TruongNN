@@ -269,6 +269,19 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                 if (invoice.Status == InvoiceStatus.Paid)
                     throw ErrorHelper.BadRequest("Invoice has paid.");
 
+                if (invoice.SessionId.HasValue)
+                {
+                    var session = await _unitOfWork.Sessions.FirstOrDefaultAsync(
+                        s => s.TruongNNID == invoice.SessionId.Value
+                    );
+
+                    if (session != null)
+                    {
+                        session.InvoiceTruongNNId = null;
+                        await _unitOfWork.Sessions.Update(session);
+                    }
+                }
+
                 await _unitOfWork.Invoices.SoftRemove(invoice);
                 await _unitOfWork.SaveChangesAsync();
 
