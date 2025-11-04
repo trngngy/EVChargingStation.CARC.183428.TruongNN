@@ -207,38 +207,110 @@ namespace EVChargingStation.CARC.Application.TruongNN.Services
                 if (invoice == null)
                     throw ErrorHelper.NotFound("Invoice not found.");
 
-                // Update fields if provided
-                if (dto.PeriodStart.HasValue)
-                    invoice.PeriodStart = dto.PeriodStart.Value;
+                // ✅ Validation 1: Không cho phép update invoice đã Paid hoặc Canceled
+                if (invoice.Status == InvoiceStatus.Paid)
+                    throw ErrorHelper.BadRequest("Cannot update a paid invoice.");
 
+                if (invoice.Status == InvoiceStatus.Canceled)
+                    throw ErrorHelper.BadRequest("Cannot update a canceled invoice.");
+
+                // ✅ Validation 2: Kiểm tra PeriodStart
+                if (dto.PeriodStart.HasValue)
+                {
+                    if (dto.PeriodStart.Value > DateTime.UtcNow)
+                        throw ErrorHelper.BadRequest("Period start cannot be in the future.");
+
+                    invoice.PeriodStart = dto.PeriodStart.Value;
+                }
+
+                // ✅ Validation 3: Kiểm tra PeriodEnd
                 if (dto.PeriodEnd.HasValue)
                 {
                     if (dto.PeriodEnd.Value < invoice.PeriodStart)
-                        throw ErrorHelper.BadRequest("Invoice periodend is wrong.");
+                        throw ErrorHelper.BadRequest("Period end must be after period start.");
+
+                    if (dto.PeriodEnd.Value > DateTime.UtcNow)
+                        throw ErrorHelper.BadRequest("Period end cannot be in the future.");
+
                     invoice.PeriodEnd = dto.PeriodEnd.Value;
                 }
 
+                // ✅ Validation 4: Kiểm tra Status transition hợp lệ
                 if (dto.Status.HasValue)
+                {
+                    // Không cho phép chuyển từ Outstanding sang Paid thông qua Update
+                    // Phải dùng PayInvoice API
+                    if (invoice.Status == InvoiceStatus.Outstanding &&
+                        dto.Status.Value == InvoiceStatus.Paid)
+                        throw ErrorHelper.BadRequest("Use PayInvoice API to mark invoice as paid.");
+
+                    // Không cho phép chuyển từ Outstanding sang Canceled thông qua Update
+                    // Phải dùng CancelInvoice API
+                    if (invoice.Status == InvoiceStatus.Outstanding &&
+                        dto.Status.Value == InvoiceStatus.Canceled)
+                        throw ErrorHelper.BadRequest("Use CancelInvoice API to cancel invoice.");
+
                     invoice.Status = dto.Status.Value;
+                }
 
+                // ✅ Validation 5: Kiểm tra SubtotalAmount
                 if (dto.SubtotalAmount.HasValue)
+                {
+                    if (dto.SubtotalAmount.Value < 0)
+                        throw ErrorHelper.BadRequest("Subtotal amount cannot be negative.");
+
                     invoice.SubtotalAmount = dto.SubtotalAmount.Value;
+                }
 
+                // ✅ Validation 6: Kiểm tra TaxAmount
                 if (dto.TaxAmount.HasValue)
+                {
+                    if (dto.TaxAmount.Value < 0)
+                        throw ErrorHelper.BadRequest("Tax amount cannot be negative.");
+
                     invoice.TaxAmount = dto.TaxAmount.Value;
+                }
 
+                // ✅ Validation 7: Kiểm tra AmountPaid
                 if (dto.AmountPaid.HasValue)
-                    invoice.AmountPaid = dto.AmountPaid.Value;
+                {
+                    if (dto.AmountPaid.Value < 0)
+                        throw ErrorHelper.BadRequest("Amount paid cannot be negative.");
 
+                    // Tính toán TotalAmount trước để validate
+                    var calculatedTotal = invoice.SubtotalAmount + invoice.TaxAmount;
+
+                    if (dto.AmountPaid.Value > calculatedTotal)
+                        throw ErrorHelper.BadRequest($"Amount paid ({dto.AmountPaid.Value:N0}) cannot exceed total amount ({calculatedTotal:N0}).");
+
+                    invoice.AmountPaid = dto.AmountPaid.Value;
+                }
+
+                // ✅ Validation 8: Kiểm tra DueDate
                 if (dto.DueDate.HasValue)
+                {
+                    if (dto.DueDate.Value < invoice.PeriodEnd)
+                        throw ErrorHelper.BadRequest("Due date must be after period end.");
+
                     invoice.DueDate = dto.DueDate.Value;
+                }
 
                 // Recalculate total amount
                 invoice.TotalAmount = invoice.SubtotalAmount + invoice.TaxAmount;
 
-                // Update status based on amount paid
-                if (invoice.AmountPaid >= invoice.TotalAmount)
+                // ✅ Validation 9: Đảm bảo AmountPaid không vượt quá TotalAmount sau khi recalculate
+                if (invoice.AmountPaid > invoice.TotalAmount)
+                {
+                    invoice.AmountPaid = invoice.TotalAmount;
+                    _logger.Warn($"Invoice {id}: AmountPaid capped to TotalAmount ({invoice.TotalAmount:N0})");
+                }
+
+                // Update status based on amount paid (chỉ tự động chuyển sang Paid nếu đủ điều kiện)
+                if (invoice.AmountPaid >= invoice.TotalAmount && invoice.Status == InvoiceStatus.Outstanding)
+                {
                     invoice.Status = InvoiceStatus.Paid;
+                    _logger.Info($"Invoice {id} automatically marked as Paid (AmountPaid: {invoice.AmountPaid:N0} >= TotalAmount: {invoice.TotalAmount:N0})");
+                }
 
                 await _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
